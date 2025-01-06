@@ -95,13 +95,16 @@ class AutomatedBOMManufacturing(Document):
 		for d in se.items:
 			d.cost_center = self.cost_center
 			item_default = get_item_defaults(d.item_code, self.company)
-			if not item_default.get("default_warehouse"):
-				frappe.throw(_("Set Default Warehouse for Item {0}: {1}".format(d.item_code, d.item_name)))
+			# if not item_default.get("default_warehouse"):
+			# 	frappe.throw(_("Set Default Warehouse for Item {0}: {1}".format(d.item_code, d.item_name)))
 
-			if d.is_finished_item or d.is_scrap_item:
-				d.t_warehouse = item_default.get("default_warehouse")
-			else:
-				d.s_warehouse = item_default.get("default_warehouse")
+			d.t_warehouse = 'Stores - NH'
+			d.s_warehouse = 'Stores - NH'
+			
+			# if d.is_finished_item or d.is_scrap_item:
+			# 	d.t_warehouse = item_default.get("default_warehouse")
+			# else:
+			# 	d.s_warehouse = item_default.get("default_warehouse")
 
 		se.save()
 		se.submit()
