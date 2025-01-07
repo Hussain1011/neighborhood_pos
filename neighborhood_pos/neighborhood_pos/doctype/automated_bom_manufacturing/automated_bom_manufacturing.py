@@ -6,6 +6,7 @@ import json
 from frappe import _
 from frappe.model.document import Document
 from erpnext.stock.doctype.item.item import get_item_defaults
+from erpnext.stock.doctype.stock_entry.stock_entry import get_uom_details
 from erpnext.stock.get_item_details import get_default_bom
 
 class AutomatedBOMManufacturing(Document):
@@ -83,6 +84,11 @@ class AutomatedBOMManufacturing(Document):
 				# Update the quantity in Stock Entry items based on BOM items
 				bom_item = bom_items[d.item_code]
 				d.qty = bom_item.qty * self.qty  # Adjust quantity based on Stock Entry quantity
+				d.uom = bom_item.uom
+				conver = get_uom_details(d.item_code, d.uom, d.qty)
+
+				d.conversion_factor = conver['conversion_factor']
+				d.transfer_qty = conver['transfer_qty']
 				updated_items.append(d)
 			elif d.is_finished_item:
 				# Retain finished goods items even if they are not in bom_items
@@ -95,16 +101,16 @@ class AutomatedBOMManufacturing(Document):
 		for d in se.items:
 			d.cost_center = self.cost_center
 			item_default = get_item_defaults(d.item_code, self.company)
-			# if not item_default.get("default_warehouse"):
-			# 	frappe.throw(_("Set Default Warehouse for Item {0}: {1}".format(d.item_code, d.item_name)))
+			if not item_default.get("default_warehouse"):
+				frappe.throw(_("Set Default Warehouse for Item {0}: {1}".format(d.item_code, d.item_name)))
 
-			d.t_warehouse = 'Stores - NH'
-			d.s_warehouse = 'Stores - NH'
-			
-			# if d.is_finished_item or d.is_scrap_item:
-			# 	d.t_warehouse = item_default.get("default_warehouse")
-			# else:
-			# 	d.s_warehouse = item_default.get("default_warehouse")
+			# d.t_warehouse = 'Stores - NH'
+			# d.s_warehouse = 'Stores - NH'
+
+			if d.is_finished_item or d.is_scrap_item:
+				d.t_warehouse = item_default.get("default_warehouse")
+			else:
+				d.s_warehouse = item_default.get("default_warehouse")
 
 		se.save()
 		se.submit()
